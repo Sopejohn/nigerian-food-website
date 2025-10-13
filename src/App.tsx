@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Header } from "./components/Header";
 import { HeroSection } from "./components/HeroSection";
 import { ProductGrid } from "./components/ProductGrid";
@@ -9,7 +9,8 @@ import { LoginForm } from "./components/LoginForm";
 import { Footer } from "./components/Footer";
 import { CartItem } from "./components/Cart";
 import { Product } from "./components/ProductCard";
-import { toast, Toaster } from "sonner@2.0.3";
+import { toast, Toaster } from "sonner";
+import { apiService } from "./services/api";
 
 interface User {
   email: string;
@@ -22,6 +23,16 @@ export default function App() {
   const [user, setUser] = useState<User | null>(null);
   const [showLogin, setShowLogin] = useState(false);
   const [isLoginMode, setIsLoginMode] = useState(true);
+
+  useEffect(() => {
+    const checkAuth = async () => {
+      const result = await apiService.validateToken();
+      if (result) {
+        setUser(result.user);
+      }
+    };
+    checkAuth();
+  }, []);
 
   const addToCart = (product: Product) => {
     setCartItems(prev => {
@@ -74,19 +85,29 @@ export default function App() {
     setShowCheckout(true);
   };
 
-  const handleCheckoutSubmit = (formData: CheckoutFormData) => {
-    // Here you would typically send the order to your backend
-    const orderTotal = cartItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-    const finalTotal = orderTotal + 5.99 + (orderTotal * 0.08) + formData.tip; // subtotal + shipping + tax + tip
-    console.log("Order submitted:", { 
-      items: cartItems, 
-      customerInfo: formData, 
-      tip: formData.tip,
-      total: finalTotal.toFixed(2)
-    });
-    toast.success(`Order placed successfully! Total: ${finalTotal.toFixed(2)}. You'll receive a confirmation email shortly.`);
-    setCartItems([]);
-    setShowCheckout(false);
+  const handleCheckoutSubmit = async (formData: CheckoutFormData) => {
+    try {
+      const orderTotal = cartItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+      const finalTotal = orderTotal + 5.99 + (orderTotal * 0.08) + formData.tip;
+      
+      const orderData = {
+        items: cartItems.map(item => ({
+          product: item.id,
+          quantity: item.quantity,
+          price: item.price
+        })),
+        customerInfo: formData,
+        total: finalTotal,
+        tip: formData.tip
+      };
+      
+      await apiService.createOrder(orderData);
+      toast.success(`Order placed successfully! Total: $${finalTotal.toFixed(2)}. You'll receive a confirmation email shortly.`);
+      setCartItems([]);
+      setShowCheckout(false);
+    } catch (error) {
+      toast.error("Failed to place order. Please try again.");
+    }
   };
 
   const handleBackToShopping = () => {
@@ -99,8 +120,9 @@ export default function App() {
   };
 
   const handleLogout = () => {
+    apiService.logout();
     setUser(null);
-    setCartItems([]); // Clear cart on logout
+    setCartItems([]);
     setShowCheckout(false);
     toast.success("Successfully logged out");
   };

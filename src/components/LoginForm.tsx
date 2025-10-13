@@ -7,6 +7,7 @@ import { Label } from "./ui/label";
 import { Separator } from "./ui/separator";
 import { Eye, EyeOff, Mail, Lock, User } from "lucide-react";
 import { toast } from "sonner";
+import { apiService } from "../services/api";
 
 interface LoginFormProps {
   onLogin: (user: { email: string; name: string }) => void;
@@ -33,61 +34,48 @@ export function LoginForm({ onLogin, onToggleMode, isLoginMode }: LoginFormProps
     e.preventDefault();
     setIsLoading(true);
 
-    // Basic validation
-    if (!formData.email || !formData.password) {
-      toast.error("Please fill in all required fields");
-      setIsLoading(false);
-      return;
-    }
-
-    if (!isLoginMode) {
-      if (!formData.name) {
-        toast.error("Please enter your name");
-        setIsLoading(false);
-        return;
-      }
-      if (formData.password !== formData.confirmPassword) {
-        toast.error("Passwords do not match");
-        setIsLoading(false);
-        return;
-      }
-      if (formData.password.length < 6) {
-        toast.error("Password must be at least 6 characters");
-        setIsLoading(false);
-        return;
-      }
-    }
-
-    // Email validation
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(formData.email)) {
-      toast.error("Please enter a valid email address");
-      setIsLoading(false);
-      return;
-    }
-
-    // Simulate API call
-    setTimeout(() => {
+    try {
       if (isLoginMode) {
-        // Mock login - in real app, you'd validate against backend
-        if (formData.email === "admin@freshmart.com" && formData.password === "admin123") {
-          onLogin({ email: formData.email, name: "Admin User" });
-          toast.success("Successfully logged in!");
-        } else if (formData.email.includes("@") && formData.password.length >= 6) {
-          // Accept any valid email/password combo for demo
-          const name = formData.email.split("@")[0];
-          onLogin({ email: formData.email, name: name.charAt(0).toUpperCase() + name.slice(1) });
+        const result = await apiService.login({
+          email: formData.email,
+          password: formData.password
+        });
+        
+        if (result.user) {
+          const userData = { email: result.user.email, name: result.user.name };
+          localStorage.setItem('user', JSON.stringify(userData));
+          onLogin(userData);
           toast.success("Successfully logged in!");
         } else {
-          toast.error("Invalid email or password");
+          toast.error(result.message || "Login failed");
         }
       } else {
-        // Mock registration
-        onLogin({ email: formData.email, name: formData.name });
-        toast.success("Account created successfully!");
+        if (formData.password !== formData.confirmPassword) {
+          toast.error("Passwords do not match");
+          setIsLoading(false);
+          return;
+        }
+        
+        const result = await apiService.register({
+          name: formData.name,
+          email: formData.email,
+          password: formData.password
+        });
+        
+        if (result.user) {
+          const userData = { email: result.user.email, name: result.user.name };
+          localStorage.setItem('user', JSON.stringify(userData));
+          onLogin(userData);
+          toast.success("Account created successfully!");
+        } else {
+          toast.error(result.message || "Registration failed");
+        }
       }
+    } catch (error) {
+      toast.error("Network error. Please try again.");
+    } finally {
       setIsLoading(false);
-    }, 1500);
+    }
   };
 
   const isFormValid = isLoginMode 
@@ -207,17 +195,7 @@ export function LoginForm({ onLogin, onToggleMode, isLoginMode }: LoginFormProps
               </Button>
             </form>
 
-            {isLoginMode && (
-              <div className="mt-4 text-center">
-                <p className="text-sm text-muted-foreground mb-2">Demo Credentials:</p>
-                <p className="text-xs text-muted-foreground">
-                  Email: admin@freshmart.com | Password: admin123
-                </p>
-                <p className="text-xs text-muted-foreground">
-                  Or use any valid email with 6+ character password
-                </p>
-              </div>
-            )}
+
 
             <Separator className="my-6" />
 
