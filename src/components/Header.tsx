@@ -40,14 +40,15 @@ export function Header({ cartItems, onUpdateQuantity, onRemoveItem, onCheckout, 
             <a href="#contact" className="text-foreground hover:text-primary transition-colors">Contact</a>
           </nav>
 
-          <div className="hidden md:flex items-center space-x-4">
+          {/* Always show auth buttons and cart */}
+          <div className="flex items-center space-x-2">
             {user ? (
               <>
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <Button variant="outline" size="sm" className="flex items-center gap-2">
                       <User className="h-4 w-4" />
-                      <span className="max-w-32 truncate">{user.name}</span>
+                      <span className="hidden sm:inline max-w-32 truncate">{user.name}</span>
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end" className="w-56">
@@ -71,8 +72,11 @@ export function Header({ cartItems, onUpdateQuantity, onRemoveItem, onCheckout, 
               </>
             ) : (
               <>
-                <Button variant="outline" size="sm" onClick={onLogin}>
+                <Button variant="outline" size="sm" onClick={onLogin} className="hidden sm:flex">
                   Sign In
+                </Button>
+                <Button variant="outline" size="sm" onClick={onLogin} className="sm:hidden">
+                  <User className="h-4 w-4" />
                 </Button>
                 <Cart 
                   items={cartItems}
@@ -84,9 +88,9 @@ export function Header({ cartItems, onUpdateQuantity, onRemoveItem, onCheckout, 
             )}
           </div>
 
-          {/* Mobile Menu Button */}
+          {/* Mobile Menu Button - only show on small screens */}
           <button
-            className="md:hidden p-2"
+            className="md:hidden p-2 ml-2"
             onClick={() => setIsMenuOpen(!isMenuOpen)}
           >
             {isMenuOpen ? <X size={24} /> : <Menu size={24} />}
@@ -101,40 +105,6 @@ export function Header({ cartItems, onUpdateQuantity, onRemoveItem, onCheckout, 
               <a href="#products" className="text-foreground hover:text-primary transition-colors">Products</a>
               <a href="#about" className="text-foreground hover:text-primary transition-colors">About</a>
               <a href="#contact" className="text-foreground hover:text-primary transition-colors">Contact</a>
-              <div className="pt-4 space-y-4">
-                {user ? (
-                  <div className="space-y-4">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="font-medium">{user.name}</p>
-                        <p className="text-sm text-muted-foreground">{user.email}</p>
-                      </div>
-                      <Button variant="outline" size="sm" onClick={onLogout}>
-                        <LogOut className="h-4 w-4 mr-2" />
-                        Sign Out
-                      </Button>
-                    </div>
-                    <Cart 
-                      items={cartItems}
-                      onUpdateQuantity={onUpdateQuantity}
-                      onRemoveItem={onRemoveItem}
-                      onCheckout={onCheckout}
-                    />
-                  </div>
-                ) : (
-                  <div className="space-y-4">
-                    <Button variant="outline" className="w-full" onClick={onLogin}>
-                      Sign In
-                    </Button>
-                    <Cart 
-                      items={cartItems}
-                      onUpdateQuantity={onUpdateQuantity}
-                      onRemoveItem={onRemoveItem}
-                      onCheckout={onCheckout}
-                    />
-                  </div>
-                )}
-              </div>
             </div>
           </nav>
         )}
