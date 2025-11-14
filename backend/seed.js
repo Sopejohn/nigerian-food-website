@@ -1,16 +1,9 @@
-import React from "react";
-import { useState, useEffect } from "react";
-import { ProductCard, Product } from "./ProductCard";
-import { Button } from "./ui/button";
-import { Input } from "./ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
-import { Search } from "lucide-react";
-import { apiService } from "../services/api";
-import { toast } from "sonner";
+const mongoose = require('mongoose');
+const Product = require('./models/Product');
+require('dotenv').config();
 
-// Sample Nigerian dishes and drinks data
-const sampleProducts: Product[] = [
-  {
+const products = [
+ {
     id: "1",
     name: "Jollof Rice",
     description: "Traditional Nigerian jollof rice with rich tomato base, spices, and vegetables. A beloved West African staple.",
@@ -102,103 +95,17 @@ const sampleProducts: Product[] = [
   }
 ];
 
-interface ProductGridProps {
-  onAddToCart: (product: Product) => void;
+async function seedProducts() {
+  try {
+    await mongoose.connect(process.env.MONGODB_URI);
+    await Product.deleteMany({});
+    await Product.insertMany(products);
+    console.log('Products seeded successfully');
+    process.exit(0);
+  } catch (error) {
+    console.error('Error seeding products:', error);
+    process.exit(1);
+  }
 }
 
-export function ProductGrid({ onAddToCart }: ProductGridProps) {
-  const [products, setProducts] = useState<Product[]>(sampleProducts);
-  const [searchTerm, setSearchTerm] = useState("");
-  const [selectedCategory, setSelectedCategory] = useState("all");
-  const [loading, setLoading] = useState(false);
-
-  useEffect(() => {
-    const fetchProducts = async () => {
-      try {
-        setLoading(true);
-        const data = await apiService.getProducts();
-        if (data && Array.isArray(data)) {
-          setProducts(data);
-        }
-      } catch (error) {
-        toast.error("Failed to load products. Using sample data.");
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchProducts();
-  }, []);
-
-  const categories = ["all", ...Array.from(new Set(products.map(p => p.category)))];
-
-  const filteredProducts = products.filter(product => {
-    const matchesSearch = product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         product.description.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesCategory = selectedCategory === "all" || product.category === selectedCategory;
-    return matchesSearch && matchesCategory;
-  });
-
-  return (
-    <section className="py-16 md:py-24">
-      <div className="container mx-auto px-4">
-        <div className="text-center space-y-4 mb-12">
-          <h2 className="text-3xl md:text-4xl lg:text-5xl">
-            Authentic <span className="text-primary">Nigerian Food & Drinks</span>
-          </h2>
-          <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-            Experience the rich flavors of Nigeria with our traditional dishes and refreshing drinks, prepared with authentic recipes and delivered fresh to your door.
-          </p>
-        </div>
-
-        {/* Search and Filter */}
-        <div className="flex flex-col md:flex-row gap-4 mb-8">
-          <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Search Nigerian food & drinks..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10"
-            />
-          </div>
-          <Select value={selectedCategory} onValueChange={setSelectedCategory}>
-            <SelectTrigger className="md:w-48">
-              <SelectValue placeholder="Category" />
-            </SelectTrigger>
-            <SelectContent>
-              {categories.map(category => (
-                <SelectItem key={category} value={category}>
-                  {category === "all" ? "All Categories" : category}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-
-        {/* Product Grid */}
-        {loading ? (
-          <div className="text-center py-12">
-            <p className="text-lg text-muted-foreground">Loading products...</p>
-          </div>
-        ) : (
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {filteredProducts.map((product) => (
-              <ProductCard
-                key={product.id}
-                product={product}
-                onAddToCart={onAddToCart}
-              />
-            ))}
-          </div>
-        )}
-
-        {filteredProducts.length === 0 && (
-          <div className="text-center py-12">
-            <p className="text-lg text-muted-foreground">No products found matching your criteria.</p>
-          </div>
-        )}
-      </div>
-    </section>
-  );
-}
+seedProducts();
