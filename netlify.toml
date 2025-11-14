@@ -4,12 +4,9 @@
   
   # Directory to publish (output directory - matches vite.config.ts)
   publish = "build"
-  
-  # Node version (adjust if needed)
-  environment = { NODE_VERSION = "20" }
 
 [build.environment]
-  # Set NODE_ENV to production during build
+  NODE_VERSION = "20"
   NODE_ENV = "production"
 
 # Redirects for SPA (Single Page Application)
